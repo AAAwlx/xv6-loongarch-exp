@@ -52,10 +52,10 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
 
   for(int level = 3; level > 0; level--) {
     pte_t *pte = &pagetable[PX(level, va)];
-    if(*pte & PTE_V) {
+    if(*pte & PTE_V) {//如果存在继续向下一级寻找
       pagetable = (pagetable_t)(PTE2PA(*pte) | DMWIN_MASK);      
-    } else {
-      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)
+    } else {//如果不存在就先分配一页做页表，再向下一级寻找
+      if(!alloc || (pagetable = (pde_t*)kalloc()) == 0)//如果内存分配失败就直接返回0
         return 0;
       memset(pagetable, 0, PGSIZE);
       *pte = PA2PTE(pagetable) | PTE_V;
@@ -67,6 +67,7 @@ walk(pagetable_t pagetable, uint64 va, int alloc)
 // Look up a virtual address, return the physical address,
 // or 0 if not mapped.
 // Can only be used to look up user pages.
+//将虚拟地址转化为物理地址
 uint64
 walkaddr(pagetable_t pagetable, uint64 va)
 {
@@ -92,7 +93,7 @@ walkaddr(pagetable_t pagetable, uint64 va)
 // be page-aligned. Returns 0 on success, -1 if walk() couldn't
 // allocate a needed page-table page.
 int
-mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, uint64 perm)
+mappages(pagetable_t pagetable, uint64 va, uint64 size, uint64 pa, uint64 perm)//
 {
   uint64 a, last;
   pte_t *pte;
@@ -143,7 +144,7 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
   }
 }
 
-// create an empty user page table.
+// create an empty user page table.创建一个自然页作为用户的页目录
 // returns 0 if out of memory.
 pagetable_t
 uvmcreate()
@@ -175,7 +176,7 @@ uvminit(pagetable_t pagetable, uchar *src, uint sz)
 // Allocate PTEs and physical memory to grow process from oldsz to
 // newsz, which need not be page aligned.  Returns new size or 0 on error.
 uint64
-uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
+uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)//用户态的虚拟地址哪些被使用过被记录在pcb结构体中
 {
   char *mem;
   uint64 a;
@@ -185,7 +186,7 @@ uvmalloc(pagetable_t pagetable, uint64 oldsz, uint64 newsz)
 
   oldsz = PGROUNDUP(oldsz);
   for(a = oldsz; a < newsz; a += PGSIZE){
-    mem = kalloc();
+    mem = kalloc();//分配一个物理地址
     if(mem == 0){
       uvmdealloc(pagetable, a, oldsz);
       return 0;
@@ -228,7 +229,7 @@ freewalk(pagetable_t pagetable)
     pte_t pte = pagetable[i];
     if((pte & PTE_V) && (PTE_FLAGS(pte) == PTE_V)){
       // this PTE points to a lower-level page table.
-      uint64 child = (PTE2PA(pte) | DMWIN_MASK);
+      uint64 child = (PTE2PA(pte) | DMWIN_MASK);//递归到下一级页表项处理
       freewalk((pagetable_t)child);
       pagetable[i] = 0;
     } else if(pte & PTE_V){

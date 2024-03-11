@@ -24,11 +24,11 @@ trapinit(void)
   initlock(&tickslock, "time");
   uint32 ecfg = ( 0U << CSR_ECFG_VS_SHIFT ) | HWI_VEC | TI_VEC;
   uint64 tcfg = 0x1000000UL | CSR_TCFG_EN | CSR_TCFG_PER;
-  w_csr_ecfg(ecfg);
-  w_csr_tcfg(tcfg);
-  w_csr_eentry((uint64)kernelvec);
-  w_csr_tlbrentry((uint64)handle_tlbr);
-  w_csr_merrentry((uint64)handle_merr);
+  w_csr_ecfg(ecfg);//例外配置
+  w_csr_tcfg(tcfg);//定时器配置
+  w_csr_eentry((uint64)kernelvec);//例外入口
+  w_csr_tlbrentry((uint64)handle_tlbr);//tlb重填例外入口
+  w_csr_merrentry((uint64)handle_merr);//机器例外入口
   intr_on();
 }
 
